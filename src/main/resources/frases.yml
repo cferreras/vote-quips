@@ -1,0 +1,84 @@
+# Configuración de vote-quips.
+# Se recarga con /reload o /vote reload. Admite códigos de color con "§":
+#   §0 negro  §1 azul oscuro  §2 verde oscuro  §3 aguamarina  §4 rojo oscuro  §5 morado  §6 dorado  §7 gris
+#   §8 gris oscuro  §9 azul  §a verde  §b celeste  §c rojo  §d rosa  §e amarillo  §f blanco
+#   §l negrita  §o cursiva  §n subrayado  §m tachado  §r vuelve al formato normal
+
+# Formato de cada tipo de anuncio. {frase} es la frase elegida de la categoría.
+#   individual: {jugador}, {causa} (solo en murio_reciente)
+#   doble:      {j1}, {j2}
+#   cadena:     {n} (número total de votos del grupo)
+formato:
+  individual: "§6§l[VOTOS]§r {jugador} ha votado por el servidor en OpinaCraft. {frase}"
+  doble: "§6§l[VOTOS]§r {j1} y {j2} han votado por el servidor en OpinaCraft. {frase}"
+  cadena: "§6§l[VOTOS]§r ¡{n} votos seguidos por el servidor en OpinaCraft! {frase}"
+
+# Comandos /votar y /vote: mensaje privado con un enlace clicable.
+#   mensaje:      texto del mensaje; {enlace} marca dónde va el enlace (si falta, se añade al final)
+#   texto_enlace: texto clicable
+#   texto_hover:  texto al pasar el ratón por encima del enlace
+#   url:          página de votación (http o https)
+votar:
+  mensaje: "§6¡Vota por Cubusfera en OpinaCraft!§r {enlace}"
+  texto_enlace: "§a§n[Haz clic aquí]"
+  texto_hover: "Abrir la página de votación de OpinaCraft"
+  url: "https://opinacraft.com/"
+
+# Texto de {causa} según el tipo de daño de la muerte (id sin "minecraft:").
+# Si el tipo no aparece aquí se usa "default".
+causas:
+  default: "causas misteriosas"
+  fall: "una caída"
+  lava: "la lava"
+  in_fire: "el fuego"
+  on_fire: "las llamas"
+  drown: "ahogamiento"
+  starve: "el hambre"
+  cactus: "un cactus"
+  explosion: "una explosión"
+  player_explosion: "una explosión"
+  mob_attack: "un monstruo"
+  mob_projectile: "un proyectil"
+  arrow: "una flecha"
+  player_attack: "otro jugador"
+  out_of_world: "el vacío"
+  magic: "la magia"
+  wither: "el wither"
+  freeze: "el frío"
+  lightning_bolt: "un rayo"
+  sonic_boom: "el Warden"
+  in_wall: "asfixia"
+  fly_into_wall: "energía cinética"
+
+# Frases por categoría. Cuando llega un voto se usa la categoría más específica que se cumpla:
+#   murio_reciente > primer_voto > recien_conectado > madrugada > generico
+# doble y cadena se usan cuando varios votos llegan seguidos.
+frases:
+  murio_reciente:
+    - "Morir por {causa} y votar al momento: eso es tener prioridades."
+    - "Ni {causa} ha podido frenar su espíritu votante."
+    - "Acaba de caer por {causa}, pero su voto sigue en pie."
+  primer_voto:
+    - "¡Su primer voto! Bienvenido al club."
+    - "Primer voto registrado. Esto es el comienzo de algo bonito."
+    - "Se estrena como votante. ¡Que no sea el último!"
+  recien_conectado:
+    - "No lleva ni un minuto conectado y ya está votando."
+    - "Entrar y votar, todo en uno."
+    - "Ni ha tenido tiempo de quitarse el abrigo y ya ha votado."
+  madrugada:
+    - "Votando a estas horas... ¿no deberías estar durmiendo?"
+    - "Los búhos también votan."
+    - "Voto de madrugada: dedicación de verdad."
+  generico:
+    - "¡Gracias por el apoyo!"
+    - "Cada voto cuenta. ¡Gracias!"
+    - "Un voto más para la colección."
+  doble:
+    - "¡Doble voto! Qué buena sincronización."
+    - "Dos votos casi a la vez. ¿Lo habían planeado?"
+    - "Pareja votante del momento."
+  cadena:
+    - "¡Esto es una cadena de votos!"
+    - "Los votos no paran de llegar."
+    - "¡Avalancha de votos!"

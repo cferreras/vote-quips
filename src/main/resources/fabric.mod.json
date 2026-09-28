@@ -1,0 +1,24 @@
+{
+	"schemaVersion": 1,
+	"id": "vote-quips",
+	"version": "${version}",
+	"name": "Vote Quips",
+	"description": "Anuncia en el chat los votos de NuVotifier con frases según el contexto del jugador.",
+	"authors": [
+		"cferreras"
+	],
+	"license": "GPL-3.0-only",
+	"environment": "server",
+	"entrypoints": {
+		"server": [
+			"com.carlosferreras.votequips.VoteQuips"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"java": ">=25",
+		"minecraft": "~26.3",
+		"fabric-api": "*",
+		"nuvotifier-fabric": "*"
+	}
+}
