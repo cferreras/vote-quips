@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -20,7 +21,7 @@ import net.minecraft.server.permissions.Permission;
 import net.minecraft.server.permissions.PermissionLevel;
 
 /**
- * /votar y /vote: envía a quien lo ejecuta un mensaje privado con el enlace de votación. Sin permisos.
+ * /votar y /vote: envía a quien lo ejecuta un mensaje privado con los enlaces de votación. Sin permisos.
  * /votar reload y /vote reload: recarga frases.yml. Requiere OP (nivel 2) o el permiso vote-quips:reload.
  */
 public final class VoteCommand {
@@ -65,25 +66,33 @@ public final class VoteCommand {
 
     static Component buildMessage(QuipsConfig config) {
         String message = config.vote("mensaje");
-        int index = message.indexOf("{enlace}");
+        String placeholder = message.contains("{enlaces}") ? "{enlaces}" : "{enlace}";
+        int index = message.indexOf(placeholder);
         String before = index >= 0 ? message.substring(0, index) : message;
-        String after = index >= 0 ? message.substring(index + "{enlace}".length()) : "";
+        String after = index >= 0 ? message.substring(index + placeholder.length()) : "";
         if (index < 0 && !before.isEmpty() && !before.endsWith(" ")) {
             before += " ";
         }
 
-        return Component.literal(before).append(link(config)).append(Component.literal(after));
+        MutableComponent result = Component.literal(before);
+        String separator = config.vote("separador");
+        List<QuipsConfig.VoteSite> sites = config.voteSites();
+        for (int i = 0; i < sites.size(); i++) {
+            if (i > 0) result.append(Component.literal(separator));
+            result.append(link(sites.get(i)));
+        }
+        return result.append(Component.literal(after));
     }
 
-    private static Component link(QuipsConfig config) {
-        String url = config.vote("url").trim();
-        MutableComponent link = Component.literal(config.vote("texto_enlace"));
+    private static Component link(QuipsConfig.VoteSite site) {
+        String url = site.url().trim();
+        MutableComponent link = Component.literal(site.linkText());
         URI uri = parseUrl(url);
         if (uri == null) {
             VoteQuips.LOGGER.warn("La URL de votación '{}' no es válida (debe empezar por http:// o https://)", url);
             return link.append(Component.literal(" " + url));
         }
-        String hover = config.vote("texto_hover");
+        String hover = site.hoverText();
         return link.withStyle(style -> {
             style = style.withClickEvent(new ClickEvent.OpenUrl(uri));
             return hover.isEmpty() ? style : style.withHoverEvent(new HoverEvent.ShowText(Component.literal(hover)));

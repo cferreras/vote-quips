@@ -19,9 +19,13 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
  * Formatos, textos de causas de muerte y frases por categoría, leídos de frases.yml.
  */
 public record QuipsConfig(Map<String, String> formats, Map<String, String> causes, Map<String, String> vote,
-                          Map<String, List<String>> phrases) {
+                          List<VoteSite> voteSites, Map<String, List<String>> phrases) {
 
     private static final String DEFAULT_RESOURCE = "/frases.yml";
+
+    /** Una web de votación de {@code votar.webs}. */
+    public record VoteSite(String linkText, String hoverText, String url) {
+    }
 
     public String format(String type) {
         return formats.getOrDefault(type, "{frase}");
@@ -33,7 +37,7 @@ public record QuipsConfig(Map<String, String> formats, Map<String, String> cause
         return cause != null ? cause : damageType;
     }
 
-    /** Valor de la sección {@code votar} (mensaje, texto_enlace, texto_hover, url). */
+    /** Valor de texto de la sección {@code votar} (mensaje, separador). */
     public String vote(String key) {
         return vote.getOrDefault(key, "");
     }
@@ -91,6 +95,8 @@ public record QuipsConfig(Map<String, String> formats, Map<String, String> cause
         causes.putAll(stringMap(map.get("causas"), "causas"));
         Map<String, String> vote = new HashMap<>(defaults != null ? defaults.vote : Map.of());
         vote.putAll(stringMap(map.get("votar"), "votar"));
+        vote.remove("webs");
+        List<VoteSite> voteSites = voteSites(map.get("votar"), vote, defaults);
 
         Map<String, List<String>> phrases = new HashMap<>();
         if (map.get("frases") instanceof Map<?, ?> categories) {
@@ -107,7 +113,34 @@ public record QuipsConfig(Map<String, String> formats, Map<String, String> cause
         } else {
             throw new IllegalArgumentException("Falta la sección 'frases'");
         }
-        return new QuipsConfig(Map.copyOf(formats), Map.copyOf(causes), Map.copyOf(vote), Map.copyOf(phrases));
+        return new QuipsConfig(Map.copyOf(formats), Map.copyOf(causes), Map.copyOf(vote), voteSites,
+                Map.copyOf(phrases));
+    }
+
+    /**
+     * Webs de {@code votar.webs}. Si no hay lista pero sí {@code votar.url} (formato antiguo de una sola web),
+     * se usa esa; si no hay ninguna de las dos, las de {@code defaults}.
+     */
+    private static List<VoteSite> voteSites(Object section, Map<String, String> vote, QuipsConfig defaults) {
+        Map<?, ?> map = section instanceof Map<?, ?> m ? m : Map.of();
+        Object webs = map.get("webs");
+        if (webs != null) {
+            if (!(webs instanceof List<?> items)) {
+                throw new IllegalArgumentException("votar.webs debe ser una lista");
+            }
+            List<VoteSite> sites = new ArrayList<>();
+            for (int i = 0; i < items.size(); i++) {
+                Map<String, String> site = stringMap(items.get(i), "votar.webs[" + i + "]");
+                sites.add(new VoteSite(site.getOrDefault("texto_enlace", ""), site.getOrDefault("texto_hover", ""),
+                        site.getOrDefault("url", "")));
+            }
+            return List.copyOf(sites);
+        }
+        if (map.get("url") != null) {
+            return List.of(new VoteSite(vote.getOrDefault("texto_enlace", ""), vote.getOrDefault("texto_hover", ""),
+                    vote.get("url")));
+        }
+        return defaults != null ? defaults.voteSites : List.of();
     }
 
     private static Map<String, String> stringMap(Object value, String section) {

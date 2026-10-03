@@ -9,20 +9,29 @@
 #   doble:      {j1}, {j2}
 #   cadena:     {n} (número total de votos del grupo)
 formato:
-  individual: "§6§l[VOTOS]§r {jugador} ha votado por el servidor en OpinaCraft. {frase}"
-  doble: "§6§l[VOTOS]§r {j1} y {j2} han votado por el servidor en OpinaCraft. {frase}"
-  cadena: "§6§l[VOTOS]§r ¡{n} votos seguidos por el servidor en OpinaCraft! {frase}"
+  individual: "§6§l[VOTOS]§r {jugador} ha votado por el servidor. {frase}"
+  doble: "§6§l[VOTOS]§r {j1} y {j2} han votado por el servidor. {frase}"
+  cadena: "§6§l[VOTOS]§r ¡{n} votos seguidos por el servidor! {frase}"
 
-# Comandos /votar y /vote: mensaje privado con un enlace clicable.
-#   mensaje:      texto del mensaje; {enlace} marca dónde va el enlace (si falta, se añade al final)
-#   texto_enlace: texto clicable
-#   texto_hover:  texto al pasar el ratón por encima del enlace
-#   url:          página de votación (http o https)
+# Comandos /votar y /vote: mensaje privado con un enlace clicable por cada web de votación.
+#   mensaje:   texto del mensaje; {enlaces} marca dónde van los enlaces (si falta, se añaden al final)
+#   separador: texto entre un enlace y el siguiente
+#   webs:      lista de webs de votación, cada una con:
+#     texto_enlace: texto clicable
+#     texto_hover:  texto al pasar el ratón por encima del enlace
+#     url:          página de votación (http o https)
+# Sigue funcionando el formato antiguo de una sola web (texto_enlace, texto_hover y url directamente
+# dentro de votar, con {enlace} en el mensaje).
 votar:
-  mensaje: "§6¡Vota por Cubusfera en OpinaCraft!§r {enlace}"
-  texto_enlace: "§a§n[Haz clic aquí]"
-  texto_hover: "Abrir la página de votación de OpinaCraft"
-  url: "https://opinacraft.com/"
+  mensaje: "§6¡Vota por Cubusfera!§r {enlaces}"
+  separador: " "
+  webs:
+    - texto_enlace: "§a§n[OpinaCraft]"
+      texto_hover: "Abrir la página de votación de OpinaCraft"
+      url: "https://opinacraft.com/"
+    - texto_enlace: "§a§n[40ServidoresMC]"
+      texto_hover: "Abrir la página de votación de 40ServidoresMC"
+      url: "https://www.40servidoresmc.es/cubusfera/votar"
 
 # Texto de {causa} según el tipo de daño de la muerte (id sin "minecraft:").
 # Si el tipo no aparece aquí se usa "default".
