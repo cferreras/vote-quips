@@ -23,8 +23,13 @@ public record QuipsConfig(Map<String, String> formats, Map<String, String> cause
 
     private static final String DEFAULT_RESOURCE = "/frases.yml";
 
-    /** Una web de votación de {@code votar.webs}. */
-    public record VoteSite(String linkText, String hoverText, String url) {
+    /**
+     * Una web de votación de {@code votar.webs}.
+     *
+     * @param name     nombre que se muestra en {web} (por defecto, el texto del enlace sin colores ni corchetes)
+     * @param services nombres de servicio que envía la web a Votifier (si está vacío, se deduce de la url y el nombre)
+     */
+    public record VoteSite(String linkText, String hoverText, String url, String name, List<String> services) {
     }
 
     public String format(String type) {
@@ -40,6 +45,56 @@ public record QuipsConfig(Map<String, String> formats, Map<String, String> cause
     /** Valor de texto de la sección {@code votar} (mensaje, separador). */
     public String vote(String key) {
         return vote.getOrDefault(key, "");
+    }
+
+    /**
+     * Nombre que se muestra para el servicio con el que llega un voto. Busca primero en {@code servicio} de cada web
+     * y luego compara con la url y el nombre; si no encuentra ninguna, devuelve el propio nombre del servicio.
+     */
+    public String siteName(String serviceName) {
+        String service = serviceName == null ? "" : serviceName.trim();
+        if (service.isEmpty()) return vote.getOrDefault("web_desconocida", "una web de votación");
+        for (VoteSite site : voteSites) {
+            for (String s : site.services()) {
+                if (s.equalsIgnoreCase(service)) return site.name();
+            }
+        }
+        String key = simplify(service);
+        if (!key.isEmpty()) {
+            for (VoteSite site : voteSites) {
+                if (!site.services().isEmpty()) continue;
+                String host = simplify(host(site.url()));
+                String name = simplify(site.name());
+                if ((!host.isEmpty() && (host.contains(key) || key.contains(host)))
+                        || (!name.isEmpty() && (name.contains(key) || key.contains(name)))) {
+                    return site.name();
+                }
+            }
+        }
+        return service;
+    }
+
+    private static String host(String url) {
+        try {
+            String host = java.net.URI.create(url.trim()).getHost();
+            if (host == null) return "";
+            host = host.toLowerCase(java.util.Locale.ROOT);
+            if (host.startsWith("www.")) host = host.substring(4);
+            int dot = host.lastIndexOf('.');
+            return dot > 0 ? host.substring(0, dot) : host; // sin dominio de primer nivel
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /** Minúsculas y solo letras y números, para comparar nombres de servicio con urls y nombres. */
+    private static String simplify(String text) {
+        return text.toLowerCase(java.util.Locale.ROOT).replaceAll("§.", "").replaceAll("[^a-z0-9]", "");
+    }
+
+    /** Texto del enlace sin códigos de color ni corchetes, para usarlo como nombre por defecto. */
+    private static String plainName(String linkText) {
+        return linkText.replaceAll("§.", "").replaceAll("[\\[\\]]", "").trim();
     }
 
     public List<String> phrases(String category) {
@@ -130,17 +185,39 @@ public record QuipsConfig(Map<String, String> formats, Map<String, String> cause
             }
             List<VoteSite> sites = new ArrayList<>();
             for (int i = 0; i < items.size(); i++) {
-                Map<String, String> site = stringMap(items.get(i), "votar.webs[" + i + "]");
-                sites.add(new VoteSite(site.getOrDefault("texto_enlace", ""), site.getOrDefault("texto_hover", ""),
-                        site.getOrDefault("url", "")));
+                String path = "votar.webs[" + i + "]";
+                Map<String, String> site = stringMap(items.get(i), path);
+                String linkText = site.getOrDefault("texto_enlace", "");
+                String name = site.getOrDefault("nombre", plainName(linkText));
+                Object servicio = items.get(i) instanceof Map<?, ?> raw ? raw.get("servicio") : null;
+                sites.add(new VoteSite(linkText, site.getOrDefault("texto_hover", ""), site.getOrDefault("url", ""),
+                        name, services(servicio, path)));
             }
             return List.copyOf(sites);
         }
         if (map.get("url") != null) {
-            return List.of(new VoteSite(vote.getOrDefault("texto_enlace", ""), vote.getOrDefault("texto_hover", ""),
-                    vote.get("url")));
+            String linkText = vote.getOrDefault("texto_enlace", "");
+            return List.of(new VoteSite(linkText, vote.getOrDefault("texto_hover", ""), vote.get("url"),
+                    plainName(linkText), List.of()));
         }
         return defaults != null ? defaults.voteSites : List.of();
+    }
+
+    /** {@code servicio}: un texto o una lista de textos. */
+    private static List<String> services(Object value, String path) {
+        if (value == null) return List.of();
+        if (value instanceof List<?> list) {
+            List<String> result = new ArrayList<>();
+            for (Object item : list) {
+                if (item != null && !String.valueOf(item).isBlank()) result.add(String.valueOf(item).trim());
+            }
+            return List.copyOf(result);
+        }
+        if (value instanceof Map<?, ?>) {
+            throw new IllegalArgumentException(path + ".servicio debe ser un texto o una lista");
+        }
+        String text = String.valueOf(value).trim();
+        return text.isEmpty() ? List.of() : List.of(text);
     }
 
     private static Map<String, String> stringMap(Object value, String section) {

@@ -5,11 +5,13 @@
 #   §l negrita  §o cursiva  §n subrayado  §m tachado  §r vuelve al formato normal
 
 # Formato de cada tipo de anuncio. {frase} es la frase elegida de la categoría.
-#   individual: {jugador}, {causa} (solo en murio_reciente)
-#   doble:      {j1}, {j2}
-#   cadena:     {n} (número total de votos del grupo)
+# {web} es el nombre de la web donde se ha votado (ver "nombre" y "servicio" en votar.webs); si se ha votado
+# en varias a la vez, salen todas: "OpinaCraft y 40ServidoresMC".
+#   individual: {jugador}, {web}, {causa} (solo en murio_reciente)
+#   doble:      {j1}, {j2}, {web1} (web de j1), {web2} (web de j2), {web} (todas)
+#   cadena:     {n} (número total de votos del grupo), {web} (todas)
 formato:
-  individual: "§6§l[VOTOS]§r {jugador} ha votado por el servidor. {frase}"
+  individual: "§6§l[VOTOS]§r {jugador} ha votado por el servidor en {web}. {frase}"
   doble: "§6§l[VOTOS]§r {j1} y {j2} han votado por el servidor. {frase}"
   cadena: "§6§l[VOTOS]§r ¡{n} votos seguidos por el servidor! {frase}"
 
@@ -20,18 +22,27 @@ formato:
 #     texto_enlace: texto clicable
 #     texto_hover:  texto al pasar el ratón por encima del enlace
 #     url:          página de votación (http o https)
+#     nombre:       (opcional) cómo se llama la web en {web}; por defecto, texto_enlace sin colores ni corchetes
+#     servicio:     (opcional) nombre de servicio que envía la web a Votifier (o una lista). Si no se pone, se
+#                   intenta deducir de la url y el nombre. El nombre real aparece en el log al llegar cada voto:
+#                   "Voto de X desde el servicio '...'".
+#   web_desconocida: texto de {web} cuando el voto llega sin nombre de servicio
+# Si un voto llega de un servicio que no coincide con ninguna web, {web} muestra el nombre del servicio tal cual.
 # Sigue funcionando el formato antiguo de una sola web (texto_enlace, texto_hover y url directamente
 # dentro de votar, con {enlace} en el mensaje).
 votar:
   mensaje: "§6¡Vota por Cubusfera!§r {enlaces}"
   separador: " "
+  web_desconocida: "una web de votación"
   webs:
     - texto_enlace: "§a§n[OpinaCraft]"
       texto_hover: "Abrir la página de votación de OpinaCraft"
       url: "https://opinacraft.com/"
+      nombre: "OpinaCraft"
     - texto_enlace: "§a§n[40ServidoresMC]"
       texto_hover: "Abrir la página de votación de 40ServidoresMC"
       url: "https://www.40servidoresmc.es/cubusfera/votar"
+      nombre: "40ServidoresMC"
 
 # Texto de {causa} según el tipo de daño de la muerte (id sin "minecraft:").
 # Si el tipo no aparece aquí se usa "default".

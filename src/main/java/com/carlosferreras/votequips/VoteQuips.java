@@ -53,12 +53,13 @@ public class VoteQuips implements DedicatedServerModInitializer {
         // El evento puede dispararse fuera del hilo principal: todo el trabajo se pasa al hilo del servidor.
         VoteListener.EVENT.register(vote -> {
             String username = vote.getUsername();
+            String service = vote.getServiceName();
             MinecraftServer current = this.server;
             if (current == null) {
                 LOGGER.warn("Voto de {} recibido sin servidor activo; se ignora", username);
                 return;
             }
-            current.execute(() -> announcer.onVote(current, username));
+            current.execute(() -> announcer.onVote(current, username, service));
         });
     }
 }

@@ -34,7 +34,7 @@ public class VoteAnnouncer {
     private static final Pattern VARIABLE = Pattern.compile("\\{(\\w+)}");
 
     /** Voto con las categorías que cumplía el jugador en el momento de votar, por orden de prioridad. */
-    private record PendingVote(String username, List<String> categories, Map<String, String> vars) {
+    private record PendingVote(String username, String site, List<String> categories, Map<String, String> vars) {
     }
 
     private final QuipsData data;
@@ -63,11 +63,13 @@ public class VoteAnnouncer {
         this.config = config;
     }
 
-    public void onVote(MinecraftServer server, String username) {
+    public void onVote(MinecraftServer server, String username, String serviceName) {
         if (username == null || username.isBlank()) {
             return;
         }
         username = username.trim();
+        String site = config.siteName(serviceName);
+        VoteQuips.LOGGER.info("Voto de {} desde el servicio '{}' ({})", username, serviceName, site);
         ServerPlayer online = server.getPlayerList().getPlayerByName(username);
         if (online != null) {
             username = online.getPlainTextName(); // mayúsculas correctas
@@ -104,7 +106,7 @@ public class VoteAnnouncer {
             firstVoteMs = now;
         }
         lastVoteMs = now;
-        pending.add(new PendingVote(username, categories, vars));
+        pending.add(new PendingVote(username, site, categories, vars));
     }
 
     public void tick(MinecraftServer server) {
@@ -123,11 +125,17 @@ public class VoteAnnouncer {
             return;
         }
         // Jugadores distintos (sin distinguir mayúsculas), en orden de llegada.
+        // Webs distintas por jugador, por si ha votado en varias dentro del mismo grupo.
         Map<String, PendingVote> byPlayer = new LinkedHashMap<>();
+        Map<String, List<String>> sitesByPlayer = new LinkedHashMap<>();
         for (PendingVote vote : pending) {
-            byPlayer.putIfAbsent(PlayerTracker.normalize(vote.username()), vote);
+            String key = PlayerTracker.normalize(vote.username());
+            byPlayer.putIfAbsent(key, vote);
+            List<String> sites = sitesByPlayer.computeIfAbsent(key, k -> new ArrayList<>());
+            if (!sites.contains(vote.site())) sites.add(vote.site());
         }
         List<PendingVote> players = new ArrayList<>(byPlayer.values());
+        List<String> allSites = sitesByPlayer.values().stream().flatMap(List::stream).distinct().toList();
 
         String type;
         String category;
@@ -139,17 +147,22 @@ public class VoteAnnouncer {
                     .filter(c -> !config.phrases(c).isEmpty())
                     .findFirst().orElse(GENERICO);
             vars = new LinkedHashMap<>(vote.vars());
+            vars.put("web", joinSites(sitesByPlayer.get(PlayerTracker.normalize(vote.username()))));
         } else if (players.size() == 2) {
             type = DOBLE;
             category = DOBLE;
             vars = new LinkedHashMap<>();
             vars.put("j1", players.get(0).username());
             vars.put("j2", players.get(1).username());
+            vars.put("web1", joinSites(sitesByPlayer.get(PlayerTracker.normalize(players.get(0).username()))));
+            vars.put("web2", joinSites(sitesByPlayer.get(PlayerTracker.normalize(players.get(1).username()))));
+            vars.put("web", joinSites(allSites));
         } else {
             type = CADENA;
             category = CADENA;
             vars = new LinkedHashMap<>();
             vars.put("n", String.valueOf(pending.size()));
+            vars.put("web", joinSites(allSites));
         }
         pending.clear();
 
@@ -179,6 +192,13 @@ public class VoteAnnouncer {
             recent.remove(0);
         }
         return chosen;
+    }
+
+    /** "A", "A y B", "A, B y C". */
+    private static String joinSites(List<String> sites) {
+        if (sites == null || sites.isEmpty()) return "";
+        if (sites.size() == 1) return sites.get(0);
+        return String.join(", ", sites.subList(0, sites.size() - 1)) + " y " + sites.get(sites.size() - 1);
     }
 
     /** Sustituye {variable} en una sola pasada; las variables desconocidas se dejan tal cual. */
